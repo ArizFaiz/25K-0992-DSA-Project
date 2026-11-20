@@ -1,13 +1,12 @@
 /*
  * Data Structures LAB Project
  * Ariz Faiz Siddiqui (25K-0992), Section J
- *
+ 
  * A console program that manages books, members, issuing, returning and waiting lists for a small library.
  * All main data structures are written by hand (no STL containers):
- *   Module 1 - Singly linked list : BookList, BorrowedList (+ merge sort by ID)
- *   Module 2 - Hash table         : HashTable (separate chaining)
- *   Module 3 - Queue (FIFO)       : WaitQueue, plus the menu interface
-
+ * Module 1 - Singly linked list : BookList, BorrowedList (+ merge sort by ID)
+ * Module 2 - Hash table         : HashTable (separate chaining)
+ * Module 3 - Queue (FIFO)       : WaitQueue, plus the menu interface
 */
 
 #include <iostream>
@@ -18,7 +17,6 @@ using namespace std;
 const int MAX_BORROW = 3;     // most books one member can hold at a time
 const int TABLE_SIZE = 101;   // number of buckets in each hash table
 const int MAX_RESULTS = 50;   // most results shown by a title search
-
 
 // Returns a lower case copy of s (used for case-insensitive title search).
 string toLower(string s)
@@ -73,14 +71,12 @@ string pad(const string &s, int width)
     return result;
 }
 
-
-
-
 // MODULE 3 (part 1): QUEUE - waiting list for a book
 
 // One node of the queue. It stores the ID of a waiting member.
-struct QueueNode
+class QueueNode
 {
+public:
     int memberId;
     QueueNode *next;
 };
@@ -158,8 +154,9 @@ public:
 };
 
 // Book record. Each book keeps its own waiting list.
-struct Book
+class Book
 {
+public:
     int id;
     string title;
     string author;
@@ -175,8 +172,9 @@ struct Book
 // MODULE 1: LINKED LISTS
 
 // BorrowedList: the book IDs one member has borrowed
-struct IntNode
+class IntNode
 {
+public:
     int value;
     IntNode *next;
 };
@@ -246,8 +244,9 @@ public:
 };
 
 // BookList: all books in the library
-struct BookNode
+class BookNode
 {
+public:
     Book *book;
     BookNode *next;
 };
@@ -370,11 +369,12 @@ BookNode *mergeSortList(BookNode *head)
 
 // One entry in a bucket chain. It only points to the Book;
 // the Book itself is owned by BookList.
-struct HashEntry
+class HashEntry
 {
+public:
     Book *book;
     HashEntry *next;
-};
+;
 
 // The same class is used twice: once keyed by book ID and once keyed by
 // title. The flag byId decides which hash function and key are used.
@@ -483,8 +483,9 @@ public:
 };
 
 // Member record and the list of members
-struct Member
+class Member
 {
+public:
     int id;
     string name;
     BorrowedList borrowed;   // books this member currently holds
@@ -492,4 +493,317 @@ struct Member
 
     Member(int memberId, const string &n) : id(memberId), name(n), next(0) {}
 };
+
+class MemberList
+{
+private:
+    Member *head;
+    int count;
+
+    MemberList(const MemberList &);
+    MemberList &operator=(const MemberList &);
+
+public:
+    MemberList() : head(0), count(0) {}
+    ~MemberList()
+    {
+        while (head != 0)
+        {
+            Member *old = head;
+            head = head->next;
+            delete old;
+        }
+    }
+
+    void add(Member *m)
+    {
+        m->next = head;     // insert at the front
+        head = m;
+        count++;
+    }
+
+    // Linear search by member ID. O(n)
+    Member *find(int id) const
+    {
+        for (Member *cur = head; cur != 0; cur = cur->next)
+            if (cur->id == id)
+                return cur;
+        return 0;
+    }
+
+    int size() const { return count; }
+};
+
+// Input helpers (safe reading from the keyboard)
+
+string readLine(const string &prompt)
+{
+    cout << prompt;
+    string line;
+    if (!getline(cin, line))
+    {
+        cout << "\nInput ended. Exiting." << endl;
+        throw 0;
+    }
+    return trim(line);
+}
+
+// Keeps asking until the user types a whole number (at most 9 digits).
+int readInt(const string &prompt)
+{
+    while (true)
+    {
+        string line = readLine(prompt);
+        int i = 0;
+        bool negative = false;
+        if (i < (int)line.size() && (line[i] == '-' || line[i] == '+'))
+        {
+            negative = (line[i] == '-');
+            i++;
+        }
+        int digits = (int)line.size() - i;
+        bool valid = digits >= 1 && digits <= 9;
+        int value = 0;
+        for (int j = i; valid && j < (int)line.size(); j++)
+        {
+            if (line[j] < '0' || line[j] > '9')
+                valid = false;
+            else
+                value = value * 10 + (line[j] - '0');
+        }
+        if (valid)
+            return negative ? -value : value;
+        cout << "Please enter a valid number." << endl;
+    }
+}
+
+// Keeps asking until the user types something.
+string readNonEmpty(const string &prompt)
+{
+    while (true)
+    {
+        string line = readLine(prompt);
+        if (!line.empty())
+            return line;
+        cout << "This cannot be empty." << endl;
+    }
+}
+
+bool readYesNo(const string &prompt)
+{
+    while (true)
+    {
+        string line = toLower(readLine(prompt));
+        if (line == "y" || line == "yes") return true;
+        if (line == "n" || line == "no") return false;
+        cout << "Please type y or n." << endl;
+    }
+}
+
+// LIBRARY: connects all the modules together
+class Library
+{
+private:
+    BookList books;         // Module 1: all books
+    HashTable idTable;      // Module 2: search by ID
+    HashTable titleTable;   // Module 2: search by title
+    MemberList members;
+
+    void printHeader() const
+    {
+        cout << pad("ID", 6) << pad("Title", 30)
+             << pad("Author", 22) << "Status" << endl;
+        cout << string(78, '-') << endl;
+    }
+
+    void printBookRow(const Book *b) const
+    {
+        cout << pad(intToStr(b->id), 6) << pad(b->title, 30)
+             << pad(b->author, 22);
+        if (b->isAvailable())
+            cout << "Available";
+        else
+        {
+            Member *m = members.find(b->issuedTo);
+            cout << "Issued to " << (m ? m->name : string("?"))
+                 << " (ID " << b->issuedTo << ")";
+            if (b->waitlist.size() > 0)
+                cout << ", " << b->waitlist.size() << " waiting";
+        }
+        cout << endl;
+    }
+
+public:
+    Library() : idTable(true), titleTable(false) {}
+
+    // Book operations
+
+    void addBook(int id, const string &title, const string &author)
+    {
+        if (id <= 0)
+        {
+            cout << "Error: book ID must be a positive number." << endl;
+            return;
+        }
+        if (idTable.findById(id) != 0)       // duplicate check, O(1)
+        {
+            cout << "Error: a book with ID " << id << " already exists." << endl;
+            return;
+        }
+        Book *b = new Book(id, title, author);
+        books.add(b);           // store in the linked list
+        idTable.insert(b);      // index by ID
+        titleTable.insert(b);   // index by title
+        cout << "Book added: " << title << endl;
+    }
+
+    void removeBook(int id)
+    {
+        Book *b = idTable.findById(id);
+        if (b == 0)
+        {
+            cout << "Error: no book with ID " << id << "." << endl;
+            return;
+        }
+        if (!b->isAvailable())
+        {
+            cout << "Error: this book is currently issued and cannot be removed." << endl;
+            return;
+        }
+        // Remove from both hash tables first, because deleting the book
+        // from the list will free the Book object.
+        idTable.remove(b);
+        titleTable.remove(b);
+        books.remove(id);
+        cout << "Book removed." << endl;
+    }
+
+    void updateBook(int id, const string &newTitle, const string &newAuthor)
+    {
+        Book *b = idTable.findById(id);
+        if (b == 0)
+        {
+            cout << "Error: no book with ID " << id << "." << endl;
+            return;
+        }
+        // The title is the key of titleTable, so take the book out
+        // before changing it and put it back afterwards.
+        titleTable.remove(b);
+        if (!newTitle.empty())  b->title = newTitle;
+        if (!newAuthor.empty()) b->author = newAuthor;
+        titleTable.insert(b);
+        cout << "Book updated." << endl;
+    }
+
+    // Member operations
+
+    void registerMember(int id, const string &name)
+    {
+        if (id <= 0)
+        {
+            cout << "Error: member ID must be a positive number." << endl;
+            return;
+        }
+        if (members.find(id) != 0)
+        {
+            cout << "Error: a member with ID " << id << " already exists." << endl;
+            return;
+        }
+        members.add(new Member(id, name));
+        cout << "Member registered: " << name << endl;
+    }
+
+    // Issue and return
+
+    void issueBook(int bookId, int memberId)
+    {
+        Book *b = idTable.findById(bookId);
+        Member *m = members.find(memberId);
+        if (b == 0)
+        {
+            cout << "Error: no book with ID " << bookId << "." << endl;
+            return;
+        }
+        if (m == 0)
+        {
+            cout << "Error: no member with ID " << memberId << "." << endl;
+            return;
+        }
+        if (b->issuedTo == memberId)
+        {
+            cout << "Error: " << m->name << " already has this book." << endl;
+            return;
+        }
+        if (m->borrowed.size() >= MAX_BORROW)
+        {
+            cout << "Error: " << m->name << " has reached the limit of "
+                 << MAX_BORROW << " books." << endl;
+            return;
+        }
+
+        if (b->isAvailable())
+        {
+            b->issuedTo = memberId;
+            m->borrowed.add(bookId);
+            cout << "Book \"" << b->title << "\" issued to " << m->name << "." << endl;
+            return;
+        }
+
+        // The book is taken. Offer a place in the waiting list.
+        cout << "This book is already issued." << endl;
+        if (b->waitlist.contains(memberId))
+        {
+            cout << m->name << " is already in the waiting list." << endl;
+            return;
+        }
+        if (readYesNo("Join the waiting list? (y/n): "))
+        {
+            b->waitlist.enqueue(memberId);
+            cout << m->name << " added to the waiting list (position "
+                 << b->waitlist.size() << ")." << endl;
+        }
+    }
+
+    void returnBook(int bookId, int memberId)
+    {
+        Book *b = idTable.findById(bookId);
+        Member *m = members.find(memberId);
+        if (b == 0)
+        {
+            cout << "Error: no book with ID " << bookId << "." << endl;
+            return;
+        }
+        if (m == 0)
+        {
+            cout << "Error: no member with ID " << memberId << "." << endl;
+            return;
+        }
+        if (!m->borrowed.contains(bookId))      // book was never borrowed by him
+        {
+            cout << "Error: " << m->name << " has not borrowed this book." << endl;
+            return;
+        }
+
+        m->borrowed.remove(bookId);
+        b->issuedTo = 0;
+        cout << "Book \"" << b->title << "\" returned by " << m->name << "." << endl;
+
+        // Give the book to the first eligible member in the waiting list.
+        int nextId;
+        while (b->waitlist.dequeue(nextId))
+        {
+            Member *next = members.find(nextId);
+            if (next->borrowed.size() >= MAX_BORROW)
+            {
+                cout << next->name << " was skipped (borrow limit reached)." << endl;
+                continue;
+            }
+            b->issuedTo = nextId;
+            next->borrowed.add(bookId);
+            cout << "The book was given to " << next->name
+                 << " from the waiting list." << endl;
+            return;
+        }
+        cout << "The book is now available." << endl;
+    }
 
