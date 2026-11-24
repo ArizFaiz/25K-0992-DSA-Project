@@ -18,6 +18,8 @@ const int MAX_BORROW = 3;     // most books one member can hold at a time
 const int TABLE_SIZE = 101;   // number of buckets in each hash table
 const int MAX_RESULTS = 50;   // most results shown by a title search
 
+// Small helper functions
+
 // Returns a lower case copy of s (used for case-insensitive title search).
 string toLower(string s)
 {
@@ -90,13 +92,18 @@ private:
     QueueNode *rear;    // last member in the line
     int count;          // number of members waiting
 
-    // Copying is disabled so two queues never share the same nodes.
-    WaitQueue(const WaitQueue &);
-    WaitQueue &operator=(const WaitQueue &);
-
 public:
-    WaitQueue() : front(0), rear(0), count(0) {}
-    ~WaitQueue() { clear(); }
+    WaitQueue()
+    {
+        front = 0;
+        rear = 0;
+        count = 0;
+    }
+
+    ~WaitQueue()
+    {
+        clear();
+    }
 
     // Adds a member at the back of the line. O(1)
     void enqueue(int memberId)
@@ -130,8 +137,15 @@ public:
         return true;
     }
 
-    bool isEmpty() const { return count == 0; }
-    int size() const { return count; }
+    bool isEmpty() const
+    {
+        return count == 0;
+    }
+
+    int size() const
+    {
+        return count;
+    }
 
     // Checks if a member is already waiting. O(n)
     bool contains(int memberId) const
@@ -143,13 +157,22 @@ public:
     }
 
     // Gives access to the first node so the list can be printed.
-    QueueNode *getFront() const { return front; }
+    QueueNode *getFront() const
+    {
+        return front;
+    }
 
     // Deletes every node.
     void clear()
     {
-        int dummy;
-        while (dequeue(dummy)) {}
+        while (front != 0)
+        {
+            QueueNode *old = front;
+            front = front->next;
+            delete old;
+        }
+        rear = 0;
+        count = 0;
     }
 };
 
@@ -164,9 +187,17 @@ public:
     WaitQueue waitlist;  // members waiting for this book
 
     Book(int bookId, const string &t, const string &a)
-        : id(bookId), title(t), author(a), issuedTo(0) {}
+    {
+        id = bookId;
+        title = t;
+        author = a;
+        issuedTo = 0;
+    }
 
-    bool isAvailable() const { return issuedTo == 0; }
+    bool isAvailable() const
+    {
+        return issuedTo == 0;
+    }
 };
 
 // MODULE 1: LINKED LISTS
@@ -185,11 +216,13 @@ private:
     IntNode *head;
     int count;
 
-    BorrowedList(const BorrowedList &);
-    BorrowedList &operator=(const BorrowedList &);
-
 public:
-    BorrowedList() : head(0), count(0) {}
+    BorrowedList()
+    {
+        head = 0;
+        count = 0;
+    }
+
     ~BorrowedList()
     {
         while (head != 0)
@@ -239,8 +272,15 @@ public:
         return false;
     }
 
-    int size() const { return count; }
-    IntNode *getHead() const { return head; }
+    int size() const
+    {
+        return count;
+    }
+
+    IntNode *getHead() const
+    {
+        return head;
+    }
 };
 
 // BookList: all books in the library
@@ -260,11 +300,14 @@ private:
     BookNode *tail;
     int count;
 
-    BookList(const BookList &);
-    BookList &operator=(const BookList &);
-
 public:
-    BookList() : head(0), tail(0), count(0) {}
+    BookList()
+    {
+        head = 0;
+        tail = 0;
+        count = 0;
+    }
+
     ~BookList()
     {
         while (head != 0)
@@ -316,8 +359,15 @@ public:
         return true;
     }
 
-    int size() const { return count; }
-    BookNode *getHead() const { return head; }
+    int size() const
+    {
+        return count;
+    }
+
+    BookNode *getHead() const
+    {
+        return head;
+    }
 };
 
 // Merge sort for a linked list of BookNode
@@ -374,20 +424,20 @@ class HashEntry
 public:
     Book *book;
     HashEntry *next;
-;
+};
 
 // The same class is used twice: once keyed by book ID and once keyed by
-// title. The flag byId decides which hash function and key are used.
+// title. setKeyIsId() decides which hash function and key are used.
 class HashTable
 {
 private:
     HashEntry *buckets[TABLE_SIZE];
     bool byId;
 
-    HashTable(const HashTable &);
-    HashTable &operator=(const HashTable &);
-
-    int hashId(int id) const { return id % TABLE_SIZE; }
+    int hashId(int id) const
+    {
+        return id % TABLE_SIZE;
+    }
 
     // Polynomial string hash: h = h * 31 + character
     int hashTitle(const string &title) const
@@ -407,10 +457,17 @@ private:
     }
 
 public:
-    HashTable(bool keyIsId) : byId(keyIsId)
+    HashTable()
     {
+        byId = true;
         for (int i = 0; i < TABLE_SIZE; i++)
             buckets[i] = 0;
+    }
+
+    // Chooses what this table uses as its key: true = book ID, false = title.
+    void setKeyIsId(bool keyIsId)
+    {
+        byId = keyIsId;
     }
 
     ~HashTable()
@@ -491,7 +548,12 @@ public:
     BorrowedList borrowed;   // books this member currently holds
     Member *next;
 
-    Member(int memberId, const string &n) : id(memberId), name(n), next(0) {}
+    Member(int memberId, const string &n)
+    {
+        id = memberId;
+        name = n;
+        next = 0;
+    }
 };
 
 class MemberList
@@ -500,11 +562,13 @@ private:
     Member *head;
     int count;
 
-    MemberList(const MemberList &);
-    MemberList &operator=(const MemberList &);
-
 public:
-    MemberList() : head(0), count(0) {}
+    MemberList()
+    {
+        head = 0;
+        count = 0;
+    }
+
     ~MemberList()
     {
         while (head != 0)
@@ -531,7 +595,10 @@ public:
         return 0;
     }
 
-    int size() const { return count; }
+    int size() const
+    {
+        return count;
+    }
 };
 
 // Input helpers (safe reading from the keyboard)
@@ -634,7 +701,11 @@ private:
     }
 
 public:
-    Library() : idTable(true), titleTable(false) {}
+    Library()
+    {
+        idTable.setKeyIsId(true);
+        titleTable.setKeyIsId(false);
+    }
 
     // Book operations
 
@@ -807,3 +878,276 @@ public:
         cout << "The book is now available." << endl;
     }
 
+    // Searching and display
+
+    void searchById(int id) const
+    {
+        Book *b = idTable.findById(id);
+        if (b == 0)
+        {
+            cout << "No book found with ID " << id << "." << endl;
+            return;
+        }
+        printHeader();
+        printBookRow(b);
+    }
+
+    void searchByTitle(const string &title) const
+    {
+        Book *results[MAX_RESULTS];
+        int n = titleTable.findByTitle(title, results, MAX_RESULTS);
+        if (n == 0)
+        {
+            cout << "No book found with the title \"" << title << "\"." << endl;
+            return;
+        }
+        printHeader();
+        for (int i = 0; i < n; i++)
+            printBookRow(results[i]);
+    }
+
+    void showAllBooks() const
+    {
+        if (books.size() == 0)
+        {
+            cout << "The library has no books." << endl;
+            return;
+        }
+        printHeader();
+        for (BookNode *cur = books.getHead(); cur != 0; cur = cur->next)
+            printBookRow(cur->book);
+        cout << "Total books: " << books.size() << endl;
+    }
+
+    // Shows all books sorted by ID. The sort is done on a copy of the list
+    // (the nodes only point to the same books), so the original order of
+    // the library list is not changed.
+    void showBooksSortedById() const
+    {
+        if (books.size() == 0)
+        {
+            cout << "The library has no books." << endl;
+            return;
+        }
+        BookNode *copyHead = 0;
+        BookNode *copyTail = 0;
+        for (BookNode *cur = books.getHead(); cur != 0; cur = cur->next)
+        {
+            BookNode *node = new BookNode;
+            node->book = cur->book;
+            node->next = 0;
+            if (copyTail == 0)
+                copyHead = copyTail = node;
+            else
+            {
+                copyTail->next = node;
+                copyTail = node;
+            }
+        }
+
+        copyHead = mergeSortList(copyHead);
+
+        printHeader();
+        BookNode *cur = copyHead;
+        while (cur != 0)
+        {
+            printBookRow(cur->book);
+            BookNode *old = cur;
+            cur = cur->next;
+            delete old;             // delete only the copy node, not the book
+        }
+        cout << "Total books: " << books.size() << endl;
+    }
+
+    void showIssuedBooks() const
+    {
+        bool any = false;
+        for (BookNode *cur = books.getHead(); cur != 0; cur = cur->next)
+        {
+            if (!cur->book->isAvailable())
+            {
+                if (!any)
+                    printHeader();
+                any = true;
+                printBookRow(cur->book);
+            }
+        }
+        if (!any)
+            cout << "No books are issued right now." << endl;
+    }
+
+    void showWaitlist(int bookId) const
+    {
+        Book *b = idTable.findById(bookId);
+        if (b == 0)
+        {
+            cout << "Error: no book with ID " << bookId << "." << endl;
+            return;
+        }
+        if (b->waitlist.isEmpty())
+        {
+            cout << "Nobody is waiting for \"" << b->title << "\"." << endl;
+            return;
+        }
+        cout << "Waiting list for \"" << b->title << "\":" << endl;
+        int position = 1;
+        for (QueueNode *cur = b->waitlist.getFront(); cur != 0; cur = cur->next)
+        {
+            Member *m = members.find(cur->memberId);
+            cout << "  " << position++ << ". " << m->name
+                 << " (ID " << m->id << ")" << endl;
+        }
+    }
+
+    void showMemberBooks(int memberId) const
+    {
+        Member *m = members.find(memberId);
+        if (m == 0)
+        {
+            cout << "Error: no member with ID " << memberId << "." << endl;
+            return;
+        }
+        if (m->borrowed.size() == 0)
+        {
+            cout << m->name << " has not borrowed any books." << endl;
+            return;
+        }
+        cout << m->name << " has borrowed (" << m->borrowed.size()
+             << "/" << MAX_BORROW << "):" << endl;
+        for (IntNode *cur = m->borrowed.getHead(); cur != 0; cur = cur->next)
+        {
+            Book *b = idTable.findById(cur->value);
+            if (b != 0)
+                cout << "  " << b->id << " - " << b->title << " by " << b->author << endl;
+        }
+    }
+
+    // Adds some books and members so the program can be demonstrated quickly.
+    void loadSampleData()
+    {
+        addBook(101, "Data Structures in C++", "Mark Weiss");
+        addBook(102, "Introduction to Algorithms", "Thomas Cormen");
+        addBook(103, "The C++ Programming Language", "Bjarne Stroustrup");
+        addBook(104, "Clean Code", "Robert Martin");
+        addBook(105, "Operating System Concepts", "Abraham Silberschatz");
+        registerMember(1, "Ali");
+        registerMember(2, "Sara");
+        registerMember(3, "Hamza");
+    }
+};
+
+// Menu (part of Module 3)
+
+void printMenu()
+{
+    cout << endl;
+    cout << "===== LIBRARY MANAGEMENT SYSTEM =====" << endl;
+    cout << " 1. Add a book" << endl;
+    cout << " 2. Remove a book" << endl;
+    cout << " 3. Update a book" << endl;
+    cout << " 4. Register a member" << endl;
+    cout << " 5. Issue a book" << endl;
+    cout << " 6. Return a book" << endl;
+    cout << " 7. Search a book by ID" << endl;
+    cout << " 8. Search a book by title" << endl;
+    cout << " 9. Show all books" << endl;
+    cout << "10. Show issued books" << endl;
+    cout << "11. Show waiting list of a book" << endl;
+    cout << "12. Show books borrowed by a member" << endl;
+    cout << "13. Load sample data" << endl;
+    cout << "14. Show all books sorted by ID" << endl;
+    cout << " 0. Exit" << endl;
+}
+
+int main()
+{
+    Library lib;
+    int choice = -1;
+
+    try
+    {
+    while (choice != 0)
+    {
+        printMenu();
+        choice = readInt("Enter your choice: ");
+        cout << endl;
+
+        switch (choice)
+        {
+        case 1:
+        {
+            int id = readInt("Book ID: ");
+            string title = readNonEmpty("Title: ");
+            string author = readNonEmpty("Author: ");
+            lib.addBook(id, title, author);
+            break;
+        }
+        case 2:
+            lib.removeBook(readInt("Book ID to remove: "));
+            break;
+        case 3:
+        {
+            int id = readInt("Book ID to update: ");
+            string title = readLine("New title (press Enter to keep): ");
+            string author = readLine("New author (press Enter to keep): ");
+            lib.updateBook(id, title, author);
+            break;
+        }
+        case 4:
+        {
+            int id = readInt("Member ID: ");
+            string name = readNonEmpty("Name: ");
+            lib.registerMember(id, name);
+            break;
+        }
+        case 5:
+        {
+            int bookId = readInt("Book ID: ");
+            int memberId = readInt("Member ID: ");
+            lib.issueBook(bookId, memberId);
+            break;
+        }
+        case 6:
+        {
+            int bookId = readInt("Book ID: ");
+            int memberId = readInt("Member ID: ");
+            lib.returnBook(bookId, memberId);
+            break;
+        }
+        case 7:
+            lib.searchById(readInt("Book ID: "));
+            break;
+        case 8:
+            lib.searchByTitle(readNonEmpty("Title: "));
+            break;
+        case 9:
+            lib.showAllBooks();
+            break;
+        case 10:
+            lib.showIssuedBooks();
+            break;
+        case 11:
+            lib.showWaitlist(readInt("Book ID: "));
+            break;
+        case 12:
+            lib.showMemberBooks(readInt("Member ID: "));
+            break;
+        case 13:
+            lib.loadSampleData();
+            break;
+        case 14:
+            lib.showBooksSortedById();
+            break;
+        case 0:
+            cout << "Goodbye!" << endl;
+            break;
+        default:
+            cout << "Invalid choice. Please pick a number from the menu." << endl;
+        }
+    }
+    }
+    catch (int)
+    {
+    }
+    return 0;
+}
